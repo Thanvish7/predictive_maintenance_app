@@ -1,19 +1,20 @@
 # Predictive Maintenance Dashboard
 
-An end-to-end machine learning project for predicting industrial machine failures using the **AI4I 2020 Predictive Maintenance Dataset**. The project uses **XGBoost** with feature engineering and class-imbalance handling, and provides an interactive **Streamlit dashboard** for machine health and failure-risk prediction.
+An end-to-end machine learning project for predicting industrial machine failures using the **AI4I 2020 Predictive Maintenance Dataset**. The project uses **XGBoost** with feature engineering and class-imbalance handling, along with an interactive **Streamlit dashboard** for machine health and failure-risk prediction.
+
 ## Live Demo
 
 [Open the Predictive Maintenance Dashboard](https://thanvishpredmain.streamlit.app/)
 
 ## Overview
 
-Unexpected machine failures can cause production downtime, maintenance costs, and equipment damage. Predictive maintenance uses historical machine telemetry to identify patterns associated with potential failures before they occur.
+Unexpected machine failures can lead to production downtime, maintenance costs, and equipment damage. Predictive maintenance uses machine operating data to identify patterns associated with potential failures before they occur.
 
-This project builds a complete pipeline:
+This project implements the following pipeline:
 
 **Data → Feature Engineering → XGBoost Model → Evaluation → Streamlit Dashboard**
 
-The dashboard allows users to enter machine operating parameters and obtain a predicted failure probability and maintenance status.
+The dashboard allows users to enter machine operating parameters and receive a predicted failure probability and equipment health status.
 
 ## Features
 
@@ -32,14 +33,14 @@ The dashboard allows users to enter machine operating parameters and obtain a pr
   * F1 Score
   * ROC-AUC
 * Interactive Streamlit dashboard
-* Saved trained model for application inference
-* Model metadata stored separately for consistent feature handling
+* Saved trained XGBoost model for application inference
+* Separate model metadata for feature and evaluation information
 
 ## Dataset
 
 The project uses the **AI4I 2020 Predictive Maintenance Dataset** from the UCI Machine Learning Repository.
 
-The dataset contains machine operating information such as:
+The dataset contains machine operating information including:
 
 * Air Temperature
 * Process Temperature
@@ -49,19 +50,19 @@ The dataset contains machine operating information such as:
 * Machine Type
 * Machine Failure
 
-The model uses the following engineered features:
+### Model Features
 
-| Feature            | Description                           |
-| ------------------ | ------------------------------------- |
-| `Air_Temp`         | Air temperature in Kelvin             |
-| `Process_Temp`     | Process temperature in Kelvin         |
-| `Rotational_Speed` | Machine rotational speed in rpm       |
-| `Torque`           | Machine torque in Nm                  |
-| `Tool_Wear`        | Tool wear duration in minutes         |
-| `Type_L`           | Encoded machine type                  |
-| `Type_M`           | Encoded machine type                  |
-| `Temp_Diff`        | Process temperature − air temperature |
-| `Power`            | Torque × rotational speed             |
+| Feature            | Description                                    |
+| ------------------ | ---------------------------------------------- |
+| `Air_Temp`         | Air temperature in Kelvin                      |
+| `Process_Temp`     | Process temperature in Kelvin                  |
+| `Rotational_Speed` | Machine rotational speed in rpm                |
+| `Torque`           | Machine torque in Nm                           |
+| `Tool_Wear`        | Tool wear duration in minutes                  |
+| `Type_L`           | Encoded low-quality machine type               |
+| `Type_M`           | Encoded medium-quality machine type            |
+| `Temp_Diff`        | Difference between process and air temperature |
+| `Power`            | Torque multiplied by rotational speed          |
 
 ## Feature Engineering
 
@@ -73,7 +74,7 @@ Two additional features are created to provide the model with useful machine-ope
 Temp_Diff = Process_Temp - Air_Temp
 ```
 
-This represents the difference between process and surrounding air temperature.
+This represents the difference between the machine's process temperature and surrounding air temperature.
 
 ### Power
 
@@ -85,26 +86,26 @@ This provides an additional representation of the mechanical load on the machine
 
 ## Machine Learning Model
 
-The project uses **XGBoost Classifier** for binary machine-failure prediction.
+The project uses an **XGBoost Classifier** for binary machine-failure prediction.
 
-Because machine failures are much less frequent than normal operating conditions, class imbalance is handled using:
+Machine failures are less frequent than normal operating conditions, creating a class imbalance problem. To address this, the model uses:
 
 ```python
 scale_pos_weight
 ```
 
-This gives greater importance to the minority failure class and helps the model identify potential failures more effectively.
+This gives greater importance to the minority failure class and helps the model detect potential failures more effectively.
 
-The data is split chronologically:
+The dataset is divided chronologically into:
 
 * **80%** training data
 * **20%** testing data
 
-A chronological split is used to provide a more realistic evaluation scenario and reduce the possibility of using future observations during training.
+A chronological split is used to provide a more realistic evaluation scenario by training on earlier observations and testing on later observations.
 
 ## Model Performance
 
-The current model is evaluated using metrics that are particularly useful for failure detection.
+The trained model is evaluated using metrics that are useful for failure detection.
 
 | Metric    |     Result |
 | --------- | ---------: |
@@ -113,21 +114,21 @@ The current model is evaluated using metrics that are particularly useful for fa
 | F1 Score  | **55.91%** |
 | ROC-AUC   | **96.64%** |
 
-### Why these metrics?
+### Evaluation Metrics
 
-**Precision** measures how many machines predicted as failures actually correspond to failures.
+**Precision** measures how many machines predicted as failures are actually failures.
 
 **Recall** measures how many of the actual machine failures are successfully detected.
 
-**F1 Score** balances precision and recall.
+**F1 Score** provides a balance between precision and recall.
 
 **ROC-AUC** measures how well the model distinguishes between normal and failure conditions across different classification thresholds.
 
-For predictive maintenance, recall is particularly important because missing an actual machine failure can be more costly than generating an additional inspection alert.
+For predictive maintenance, recall is particularly important because failing to detect an actual machine failure can be more costly than generating an additional inspection alert.
 
 ## Streamlit Dashboard
 
-The Streamlit application provides an interactive interface where users can enter machine telemetry values such as:
+The Streamlit application provides an interactive interface where users can enter machine operating parameters such as:
 
 * Air Temperature
 * Process Temperature
@@ -136,13 +137,18 @@ The Streamlit application provides an interactive interface where users can ente
 * Tool Wear
 * Machine Type
 
-The application calculates the engineered features and sends the resulting feature vector to the trained XGBoost model.
+The application calculates the engineered features and passes the resulting feature vector to the trained XGBoost model.
 
-The dashboard then displays the predicted failure probability and equipment health status.
+The dashboard then displays:
+
+* Predicted failure probability
+* Equipment health status
+* Calculated temperature difference
+* Calculated power metric
 
 ### Health Status
 
-The application categorizes the prediction into three levels:
+The application categorizes the predicted risk into three levels:
 
 * **NORMAL** — low predicted failure risk
 * **WARNING** — elevated predicted failure risk
@@ -173,7 +179,6 @@ predictive_maintenance_app/
 | `model_metadata.json`               | Model features and evaluation metadata                                 |
 | `requirements.txt`                  | Python dependencies                                                    |
 | `README.md`                         | Project documentation                                                  |
-| `.gitignore`                        | Files excluded from Git tracking                                       |
 
 ## Installation
 
@@ -212,7 +217,7 @@ The main technologies used in this project are:
 * Matplotlib
 * Seaborn
 
-Install all required packages using:
+All required packages can be installed using:
 
 ```bash
 python -m pip install -r requirements.txt
@@ -229,7 +234,7 @@ Categorical Encoding
         ↓
 Feature Engineering
         ↓
-Train/Test Split
+Chronological Train/Test Split
         ↓
 XGBoost Classifier
         ↓
@@ -257,14 +262,13 @@ Machine Failure Prediction
 * Add model explainability using SHAP.
 * Store prediction history for further analysis.
 * Experiment with additional machine-learning models.
-* Deploy the system with a real-time industrial IoT pipeline.
+* Integrate the system with a real-time industrial IoT pipeline.
 
 ## Author
 
 **Thanvish A**
 
 B.Tech – Computer Science (IoT and Automation)
-
 SASTRA University
 
 ## Project Repository
