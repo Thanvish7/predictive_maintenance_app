@@ -1,73 +1,272 @@
-# End-to-End Predictive Maintenance and Telemetry Dashboard
+# Predictive Maintenance Dashboard
 
-An interactive machine learning application built to predict industrial equipment failures before they happen. This project utilizes sensor telemetry data to classify machinery operational status, generating live risk index reports to minimize factory downtime and repair costs.
+An end-to-end machine learning project for predicting industrial machine failures using the **AI4I 2020 Predictive Maintenance Dataset**. The project uses **XGBoost** with feature engineering and class-imbalance handling, and provides an interactive **Streamlit dashboard** for machine health and failure-risk prediction.
+## Live Demo
 
-Live App Link: https://thanvishpm.streamlit.app/
+[Open the Predictive Maintenance Dashboard](https://thanvishpredmain.streamlit.app/)
 
----
+## Overview
 
-## Project Overview
+Unexpected machine failures can cause production downtime, maintenance costs, and equipment damage. Predictive maintenance uses historical machine telemetry to identify patterns associated with potential failures before they occur.
 
-In industrial manufacturing, unexpected equipment breakdowns lead to massive losses in production capacity and costly reactive repairs. This project addresses this challenge by analyzing historical sensor metrics to detect anomalies and degrading machine performance.
+This project builds a complete pipeline:
 
-The project features a full end-to-end data pipeline, from custom feature engineering to class-imbalance-aware modeling, culminating in a live-updating user dashboard for factory technicians and management.
+**Data → Feature Engineering → XGBoost Model → Evaluation → Streamlit Dashboard**
 
----
+The dashboard allows users to enter machine operating parameters and obtain a predicted failure probability and maintenance status.
 
-## Dataset and Features
+## Features
 
-The model is trained on the industry-benchmark AI4I 2020 Predictive Maintenance Dataset (sourced from the UCI Machine Learning Repository), which reflects 10,000 operational data points across real-world physical boundaries.
+* XGBoost-based machine failure prediction
+* AI4I 2020 Predictive Maintenance Dataset
+* Feature engineering using:
 
-Key telemetry inputs utilized:
-* Air Temperature (K) and Process Temperature (K)
-* Rotational Speed (rpm) and Torque (Nm)
-* Tool Wear (min) - accumulated operation duration
-* Machine Quality Type - variants segmented into Low (L), Medium (M), and High (H)
+  * Temperature Difference
+  * Power
+* Class imbalance handling using `scale_pos_weight`
+* Chronological 80/20 train-test split
+* Model evaluation using:
 
-### Advanced Feature Engineering
-To improve predictive capability, custom physical interaction features were introduced:
-1. Temperature Differential (Temp_Diff): Measures cooling efficiency over active run cycles.
-2. Power Metric Approximations (Power): Captures multi-variable strain patterns using structural engineering approximations (Torque multiplied by Rotational Speed).
+  * Precision
+  * Recall
+  * F1 Score
+  * ROC-AUC
+* Interactive Streamlit dashboard
+* Saved trained model for application inference
+* Model metadata stored separately for consistent feature handling
 
----
+## Dataset
 
-## Machine Learning Pipeline
+The project uses the **AI4I 2020 Predictive Maintenance Dataset** from the UCI Machine Learning Repository.
 
-* Handling Class Imbalance: Industrial asset datasets are naturally imbalanced (failures occur less than 4 percent of the time). This model utilizes an XGBoost Classifier configured with dynamic scale positive weighting (scale_pos_weight) to penalize missed critical failures.
-* Temporal Evaluation Validation: A chronological train-test split (80/20 sequential window) was applied to prevent future-data leakage, simulating realistic deployment contexts.
-* Key Evaluation Focus: Prioritized Recall and ROC-AUC metrics over basic accuracy to ensure maximum coverage of critical faults without generating excessive false alarms.
+The dataset contains machine operating information such as:
 
----
+* Air Temperature
+* Process Temperature
+* Rotational Speed
+* Torque
+* Tool Wear
+* Machine Type
+* Machine Failure
 
-## App Interface Architecture
+The model uses the following engineered features:
 
-The final interactive web app is built with Streamlit. It takes inputs across operational limits and converts sensor configurations into definitive maintenance recommendations:
-* NORMAL: Equipment operating reliably within standard physical boundaries.
-* WARNING: Elevated asset stress or tool wear detected; inspection scheduling suggested.
-* CRITICAL ALERT: High-probability breakdown profile identified; immediate shutdown or repair required.
+| Feature            | Description                           |
+| ------------------ | ------------------------------------- |
+| `Air_Temp`         | Air temperature in Kelvin             |
+| `Process_Temp`     | Process temperature in Kelvin         |
+| `Rotational_Speed` | Machine rotational speed in rpm       |
+| `Torque`           | Machine torque in Nm                  |
+| `Tool_Wear`        | Tool wear duration in minutes         |
+| `Type_L`           | Encoded machine type                  |
+| `Type_M`           | Encoded machine type                  |
+| `Temp_Diff`        | Process temperature − air temperature |
+| `Power`            | Torque × rotational speed             |
 
----
+## Feature Engineering
 
-## Local Installation and Setup
+Two additional features are created to provide the model with useful machine-operating relationships.
 
-Follow these quick instructions to run the application locally on your computer:
+### Temperature Difference
 
-1. Clone this repository:
-   git clone https://github.com
-   cd predictive-maintenance-app
+```text
+Temp_Diff = Process_Temp - Air_Temp
+```
 
-2. Install the necessary system dependencies:
-   python -m pip install -r requirements.txt
+This represents the difference between process and surrounding air temperature.
 
-3. Launch your interactive Streamlit dashboard:
-   python -m streamlit run app.py
+### Power
 
----
+```text
+Power = Torque × Rotational_Speed
+```
 
-## Technologies Used
+This provides an additional representation of the mechanical load on the machine.
 
-* Language: Python
-* Development environment: Jupyter Notebook
-* Data and ML Pipelines: Pandas, NumPy, Scikit-Learn, XGBoost
-* Visualization: Matplotlib, Seaborn
-* Deployment Architecture: Streamlit Cloud
+## Machine Learning Model
+
+The project uses **XGBoost Classifier** for binary machine-failure prediction.
+
+Because machine failures are much less frequent than normal operating conditions, class imbalance is handled using:
+
+```python
+scale_pos_weight
+```
+
+This gives greater importance to the minority failure class and helps the model identify potential failures more effectively.
+
+The data is split chronologically:
+
+* **80%** training data
+* **20%** testing data
+
+A chronological split is used to provide a more realistic evaluation scenario and reduce the possibility of using future observations during training.
+
+## Model Performance
+
+The current model is evaluated using metrics that are particularly useful for failure detection.
+
+| Metric    |     Result |
+| --------- | ---------: |
+| Precision | **48.15%** |
+| Recall    | **66.67%** |
+| F1 Score  | **55.91%** |
+| ROC-AUC   | **96.64%** |
+
+### Why these metrics?
+
+**Precision** measures how many machines predicted as failures actually correspond to failures.
+
+**Recall** measures how many of the actual machine failures are successfully detected.
+
+**F1 Score** balances precision and recall.
+
+**ROC-AUC** measures how well the model distinguishes between normal and failure conditions across different classification thresholds.
+
+For predictive maintenance, recall is particularly important because missing an actual machine failure can be more costly than generating an additional inspection alert.
+
+## Streamlit Dashboard
+
+The Streamlit application provides an interactive interface where users can enter machine telemetry values such as:
+
+* Air Temperature
+* Process Temperature
+* Rotational Speed
+* Torque
+* Tool Wear
+* Machine Type
+
+The application calculates the engineered features and sends the resulting feature vector to the trained XGBoost model.
+
+The dashboard then displays the predicted failure probability and equipment health status.
+
+### Health Status
+
+The application categorizes the prediction into three levels:
+
+* **NORMAL** — low predicted failure risk
+* **WARNING** — elevated predicted failure risk
+* **CRITICAL** — high predicted failure risk requiring attention
+
+These categories are intended as decision-support indicators and do not replace professional maintenance procedures.
+
+## Project Structure
+
+```text
+predictive_maintenance_app/
+│
+├── predictive_maintenance.ipynb
+├── predictive_maintenance_app.py
+├── predictive_maintenance_model.json
+├── model_metadata.json
+├── requirements.txt
+└── README.md
+```
+
+### File Description
+
+| File                                | Purpose                                                                |
+| ----------------------------------- | ---------------------------------------------------------------------- |
+| `predictive_maintenance.ipynb`      | Data preprocessing, feature engineering, model training and evaluation |
+| `predictive_maintenance_app.py`     | Streamlit dashboard                                                    |
+| `predictive_maintenance_model.json` | Trained XGBoost model                                                  |
+| `model_metadata.json`               | Model features and evaluation metadata                                 |
+| `requirements.txt`                  | Python dependencies                                                    |
+| `README.md`                         | Project documentation                                                  |
+| `.gitignore`                        | Files excluded from Git tracking                                       |
+
+## Installation
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Thanvish7/predictive_maintenance_app.git
+cd predictive_maintenance_app
+```
+
+### 2. Install dependencies
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### 3. Run the Streamlit application
+
+```bash
+python -m streamlit run predictive_maintenance_app.py
+```
+
+The application will open in your browser.
+
+## Requirements
+
+The main technologies used in this project are:
+
+* Python
+* Pandas
+* NumPy
+* Scikit-learn
+* XGBoost
+* Streamlit
+* Jupyter Notebook
+* Matplotlib
+* Seaborn
+
+Install all required packages using:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+## Model Workflow
+
+```text
+AI4I 2020 Dataset
+        ↓
+Data Cleaning
+        ↓
+Categorical Encoding
+        ↓
+Feature Engineering
+        ↓
+Train/Test Split
+        ↓
+XGBoost Classifier
+        ↓
+Model Evaluation
+        ↓
+Saved Model
+        ↓
+Streamlit Dashboard
+        ↓
+Machine Failure Prediction
+```
+
+## Limitations
+
+* The model is trained on the AI4I 2020 dataset and may not generalize directly to every industrial machine.
+* The dashboard currently accepts machine telemetry through user inputs rather than a live physical sensor connection.
+* Predictions should be treated as decision-support information rather than a replacement for professional maintenance inspection.
+* Model performance depends on the quality and distribution of the input data.
+
+## Future Improvements
+
+* Connect the dashboard to real-time IoT sensor data.
+* Add historical machine-health trends.
+* Implement automated maintenance alerts.
+* Add model explainability using SHAP.
+* Store prediction history for further analysis.
+* Experiment with additional machine-learning models.
+* Deploy the system with a real-time industrial IoT pipeline.
+
+## Author
+
+**Thanvish A**
+
+B.Tech – Computer Science (IoT and Automation)
+
+SASTRA University
+
+## Project Repository
+
+[GitHub Repository](https://github.com/Thanvish7/predictive_maintenance_app)
